@@ -1,0 +1,104 @@
+---
+title: 'Peer-graded Assignment: Prediction Assignment Writeup'
+author: "Aya Abdelmonem"
+date: "10/9/2017"
+output: html_document
+---
+
+##Machine Learning course project 
+
+##Summary 
+###Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways
+
+##download training dataset and testing dataset and read these datasets into variables .
+
+```{r echo=TRUE}
+library(downloader)
+download.file("http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv","C:/Users/dell/Desktop/myDataScienceWork/machine learning/training.csv",mode = "wb")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv","C:/Users/dell/Desktop/myDataScienceWork/machine learning/testing.csv",mode = "wb")
+training_dataset <- read.csv("C:/Users/dell/Desktop/myDataScienceWork/machine learning/training.csv")
+testing_dataset <- read.csv("C:/Users/dell/Desktop/myDataScienceWork/machine learning/testing.csv")
+dim(training_dataset)
+head(training_dataset)
+```
+
+### As we can see that the first seven columns are useless in predicting out model , so we will get rid of these variables .
+
+```{r echo=TRUE}
+
+training_dataset <- training_dataset[,-c(1:7)]
+```
+##Cleaning dataset from any missing value and remove variables near to zero variance .
+
+```{r echo=TRUE}
+library(caret)
+training_dataset <- training_dataset[,colSums(is.na(training_dataset))==0]
+near_zero_var <- nearZeroVar(training_dataset)
+training_dataset <- training_dataset[,-near_zero_var]
+
+```
+### We can take a look for data dimensions after doing some preprocessing analysis.
+
+```{r echo=TRUE}
+dim(training_dataset)
+```
+
+##Partitioning train dataset into training set and test set .
+### I will split it into 80% for training set and 20% for testing set .
+
+```{r echo=TRUE}
+inTrain  <- createDataPartition(training_dataset$classe, p=0.8, list=FALSE)
+train <- training_dataset[inTrain, ]
+test  <- training_dataset[-inTrain, ]
+```
+##Loading required libraries 
+
+```{r echo=TRUE}
+library(ggplot2)
+library(rpart)
+require(randomForest)
+
+```
+##predictiion using Decision tree 
+
+```{r echo=TRUE}
+
+train_decision_tree <- rpart(classe ~ ., data = train, method = "class")
+test_decision_tree <- predict(train_decision_tree, test, type = "class")
+confusionMatrix(test_decision_tree, test$classe)
+
+rpart.plot::rpart.plot(train_decision_tree)
+
+```
+
+
+
+
+###As we see that the accuracy is about 74% .
+
+##Prediction using Random forest algorithm 
+
+```{r echo=TRUE}
+train_random_forest <- randomForest(classe ~. , data = train, type = "class")
+test_random_forest  <- predict(train_random_forest, test, type = "class")
+confusionMatrix(test_random_forest , test$classe)
+```
+
+
+###As we see that the accuracy of random forest is 99% and this value is much better than the previous algorithm .
+
+
+```{r echo=TRUE}
+plot(train_random_forest)
+
+```
+
+##Final  model prediction
+###We will use random forest algorithm to test the  rest dataset 
+
+```{r echo=TRUE}
+final_model <- predict(train_random_forest, testing_dataset, type = "class")
+final_model
+
+
+```
